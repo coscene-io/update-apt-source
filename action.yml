@@ -1,0 +1,24 @@
+name: 'Update APT Repository'
+description: 'Updates APT repository with new deb packages'
+inputs:
+  ubuntu-distro:
+    description: 'Ubuntu distribution (focal/jammy/all)'
+    required: true
+  deb-path:
+    description: 'Path to the deb file'
+    required: true
+  architecture:
+    description: 'Package architecture (amd64/arm64)'
+    required: true
+  access-key-id:
+    description: 'OSS access key ID'
+    required: true
+  access-key-secret:
+    description: 'OSS access key secret'
+    required: true
+  gpg-private-key:
+    description: 'Base64 encoded GPG private key'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
