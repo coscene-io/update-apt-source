@@ -4,7 +4,7 @@ inputs:
   ubuntu-distro:
     description: 'Ubuntu distribution (focal/jammy/all)'
     required: true
-  deb-path:
+  deb-paths:
     description: 'Path to the deb file'
     required: true
   architecture:
