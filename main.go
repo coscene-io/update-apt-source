@@ -38,28 +38,11 @@ func main() {
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("获取当前工作目录失败: %v\n", err)
+		fmt.Printf("Get current working directory failed: %v\n", err)
 	} else {
-		fmt.Printf("当前工作目录: %s\n", cwd)
+		fmt.Printf("Current working directory: %s\n", cwd)
 	}
-
-	// 列出某个目录内容（例如dist目录）
-	dirToList := "/__w/coListener/coListener"
-	entries, err := os.ReadDir(dirToList)
-	if err != nil {
-		fmt.Printf("列出目录 %s 失败: %v\n", dirToList, err)
-	} else {
-		fmt.Printf("\n%s 目录内容:\n", dirToList)
-		for _, entry := range entries {
-			info, _ := entry.Info()
-			size := ""
-			if info != nil {
-				size = fmt.Sprintf("%d bytes", info.Size())
-			}
-			fmt.Printf("  - %s %s\n", entry.Name(), size)
-		}
-		fmt.Println()
-	}
+	PrintDirectoryTree(cwd, "")
 
 	cfg := parseConfig()
 	if !cfg.IsValid() {
@@ -462,4 +445,51 @@ func signReleaseFiles(bucket *oss.Bucket, releaseContent string, cfg config.Conf
 
 	inReleasePath := fmt.Sprintf("coscene-apt-source/dists/%s/InRelease", distro)
 	return bucket.PutObject(inReleasePath, bytes.NewReader(inReleaseBuf.Bytes()))
+}
+
+func PrintDirectoryTree(root string, indent string) error {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return fmt.Errorf("read directory %s failed: %v", root, err)
+	}
+
+	for i, entry := range entries {
+		// 确定当前项是否为最后一项
+		isLast := i == len(entries)-1
+		
+		// 根据是否为最后一项选择适当的前缀
+		connector := "├── "
+		if isLast {
+			connector = "└── "
+		}
+		
+		// 获取文件信息
+		info, err := entry.Info()
+		size := ""
+		if err == nil {
+			size = fmt.Sprintf("(%d bytes)", info.Size())
+		}
+		
+		// 打印当前项
+		fmt.Printf("%s%s%s %s\n", indent, connector, entry.Name(), size)
+		
+		// 如果是目录，则递归处理
+		if entry.IsDir() {
+			// 为子项确定新的缩进
+			newIndent := indent + "│   "
+			if isLast {
+				newIndent = indent + "    "
+			}
+			
+			// 递归处理子目录
+			subdir := filepath.Join(root, entry.Name())
+			err := PrintDirectoryTree(subdir, newIndent)
+			if err != nil {
+				// 仅记录错误，继续处理其他条目
+				fmt.Printf("%s    [ERROR: %v]\n", newIndent, err)
+			}
+		}
+	}
+	
+	return nil
 }
