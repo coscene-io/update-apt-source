@@ -42,9 +42,9 @@ func main() {
 	} else {
 		fmt.Printf("当前工作目录: %s\n", cwd)
 	}
-	
+
 	// 列出某个目录内容（例如dist目录）
-	dirToList := "."
+	dirToList := "/__w/coListener/coListener"
 	entries, err := os.ReadDir(dirToList)
 	if err != nil {
 		fmt.Printf("列出目录 %s 失败: %v\n", dirToList, err)
@@ -60,7 +60,6 @@ func main() {
 		}
 		fmt.Println()
 	}
-
 
 	cfg := parseConfig()
 	if !cfg.IsValid() {
