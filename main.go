@@ -35,6 +35,33 @@ var supportedUbuntuDistros = []string{
 }
 
 func main() {
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("获取当前工作目录失败: %v\n", err)
+	} else {
+		fmt.Printf("当前工作目录: %s\n", cwd)
+	}
+	
+	// 列出某个目录内容（例如dist目录）
+	dirToList := "."
+	entries, err := os.ReadDir(dirToList)
+	if err != nil {
+		fmt.Printf("列出目录 %s 失败: %v\n", dirToList, err)
+	} else {
+		fmt.Printf("\n%s 目录内容:\n", dirToList)
+		for _, entry := range entries {
+			info, _ := entry.Info()
+			size := ""
+			if info != nil {
+				size = fmt.Sprintf("%d bytes", info.Size())
+			}
+			fmt.Printf("  - %s %s\n", entry.Name(), size)
+		}
+		fmt.Println()
+	}
+
+
 	cfg := parseConfig()
 	if !cfg.IsValid() {
 		panic("config invalid!")
