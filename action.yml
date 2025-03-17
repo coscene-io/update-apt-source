@@ -7,7 +7,7 @@ inputs:
   deb-paths:
     description: 'Path to the deb file'
     required: true
-  architecture:
+  architectures:
     description: 'Package architecture (amd64/arm64)'
     required: true
   access-key-id:
