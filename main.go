@@ -119,7 +119,6 @@ func main() {
 			if err != nil {
 				panic(fmt.Sprintf("**Failed to upload deb package: %v**", err))
 			}
-			fmt.Printf("✓\n")
 
 			// Update Packages file
 			fmt.Printf("    Updating Packages file...  ")
@@ -226,6 +225,7 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 			return nil, fmt.Errorf("failed to upload to OSS: %v", err)
 		}
 
+		fmt.Printf("✓\n")
 		parts := strings.Split(baseFilename, "_")
 		if len(parts) >= 3 {
 			packageName := parts[0]
@@ -238,11 +238,12 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 				cfg.Architecture,
 				latestFilename)
 
-			fmt.Printf("    Creating symlink %s -> %s\n", latestFilename, baseFilename)
+			fmt.Printf("    Creating symlink %s -> %s ...", latestFilename, baseFilename)
 			err = bucket.PutSymlink(latestOssPath, debInfo.Filename)
 			if err != nil {
 				fmt.Printf("    Warning: Failed to create symlink: %v\n", err)
 			}
+			fmt.Printf("✓\n")
 		} else {
 			fmt.Printf("    Warning: Filename format not recognized for symlink creation: %s\n", baseFilename)
 		}
