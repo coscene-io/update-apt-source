@@ -237,8 +237,8 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 				cfg.Architecture,
 				latestFilename)
 
-			fmt.Printf("    Creating symlink %s -> %s ...", latestFilename, baseFilename)
-			err = bucket.PutSymlink(latestOssPath, debInfo.Filename)
+			fmt.Printf("    Creating symlink %s -> %s ...  ", latestFilename, baseFilename)
+			err = bucket.PutSymlink(latestOssPath, "coscene-apt-source/"+debInfo.Filename)
 			if err != nil {
 				fmt.Printf("    Warning: Failed to create symlink: %v\n", err)
 			}
