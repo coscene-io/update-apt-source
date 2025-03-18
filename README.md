@@ -28,33 +28,31 @@ jobs:
   update-apt-repo:
   runs-on: ubuntu-latest
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
     - name: Update APT Source
-      uses: coscene-io/update-apt-source@v1
+      uses: coscene-io/update-apt-source@main
       with:
-        ubuntu-distro: noble
-        deb-paths: |
+        ubuntu_distro: noble
+        deb_paths: |
             ./dist/myapp_1.0.0_amd64.deb
             ./dist/myapp_1.0.0_arm64.deb
         architectures: |
             amd64
             arm64
-        oss-key-id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-        oss-key-secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+        access_key_id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+        access_key_secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
 ```
 
 ## Inputs
 
-| Input Name | Description | Required |
-|------------|-------------|----------|
-| `ubuntu-distro` | Ubuntu distribution codename (e.g., `focal`, `jammy`, or `all`) | Yes |
-| `deb-paths` | Paths to .deb packages, separated by newlines | Yes |
-| `architectures` | Architectures for each .deb package, separated by newlines, in the same order as deb-paths, with the same number of entries as deb-paths | Yes |
-| `oss-key-id` | Aliyun OSS Access Key ID | Yes |
-| `oss-key-secret` | Aliyun OSS Access Key Secret | Yes |
-| `gpg-private-key` | GPG private key for signing | Yes |
+| Input Name          | Description                                                                                                                              | Required |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `ubuntu_distro`     | Ubuntu distribution codename (e.g., `focal`, `jammy`, or `all`)                                                                          | Yes      |
+| `deb_paths`         | Paths to .deb packages, separated by newlines                                                                                            | Yes      |
+| `architectures`     | Architectures for each .deb package, separated by newlines, in the same order as deb-paths, with the same number of entries as deb-paths | Yes      |
+| `access_key_id`     | Aliyun OSS Access Key ID                                                                                                                 | Yes      |
+| `access_key_secret` | Aliyun OSS Access Key Secret                                                                                                             | Yes      |
+| `gpg_private_key`   | GPG private key for signing                                                                                                              | Yes      |
 
 ## How It Works
 

@@ -19,6 +19,7 @@ type Locker struct {
 }
 
 func NewLocker(bucket *oss.Bucket) *Locker {
+	fmt.Println("Initialize Locker...")
 	return &Locker{bucket: bucket}
 }
 
@@ -30,7 +31,7 @@ func (l *Locker) Lock() error {
 	}
 
 	if exist {
-		fmt.Println("lock file found, waiting for release...")
+		fmt.Println("  lock file found, waiting for release...")
 		deadline := time.Now().Add(maxLockWait)
 
 		for time.Now().Before(deadline) {
@@ -45,7 +46,7 @@ func (l *Locker) Lock() error {
 				break
 			}
 
-			fmt.Println("lock file still exists, waiting...")
+			fmt.Println("  lock file still exists, waiting...")
 		}
 
 		exist, err = l.bucket.IsObjectExist(lockFilePath)
@@ -63,7 +64,7 @@ func (l *Locker) Lock() error {
 		return fmt.Errorf("create lock file failed: %v", err)
 	}
 
-	fmt.Println("lock file created")
+	fmt.Println("\nApt source repo locking!")
 	return nil
 }
 
@@ -78,7 +79,7 @@ func (l *Locker) Unlock() error {
 		if err != nil {
 			return fmt.Errorf("delete lock file failed: %v", err)
 		}
-		fmt.Println("lock file deleted")
+		fmt.Println("\nApt source repo unlocked!")
 	}
 
 	return nil
