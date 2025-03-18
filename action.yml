@@ -1,14 +1,17 @@
-name: 'Update APT Repository'
-description: 'Updates APT repository with new deb packages'
+name: 'Update APT Source'
+description: 'A GitHub Action for managing Debian/Ubuntu APT repositories'
+author: 'coScene Technologies'
+
+# 定义输入参数
 inputs:
   ubuntu-distro:
-    description: 'Ubuntu distribution (focal/jammy/all)'
+    description: 'Ubuntu distribution codename (e.g., focal, jammy, or all)'
     required: true
   deb-paths:
-    description: 'Path to the deb file'
+    description: 'Paths to .deb packages, separated by newlines'
     required: true
   architectures:
-    description: 'Package architecture (amd64/arm64)'
+    description: 'Architectures for each .deb package, in the same order as deb-paths'
     required: true
   access-key-id:
     description: 'OSS access key ID'
@@ -17,8 +20,53 @@ inputs:
     description: 'OSS access key secret'
     required: true
   gpg-private-key:
-    description: 'Base64 encoded GPG private key'
+    description: 'GPG private key for signing (base64 encoded)'
     required: true
+
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: 'composite'
+  steps:
+    - name: Set up repository lock
+      uses: softprops/turnstyle@v1
+      with:
+        poll-interval-seconds: 10
+        same-branch-only: false
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      
+    - name: Run Update APT Source
+      shell: bash
+      run: |
+        echo "Starting APT repository update process..."
+        
+        # 设置环境变量
+        export INPUT_UBUNTU-DISTRO="${{ inputs.ubuntu-distro }}"
+        export INPUT_DEB-PATHS="${{ inputs.deb-paths }}"
+        export INPUT_ARCHITECTURES="${{ inputs.architectures }}"
+        export INPUT_ACCESS-KEY-ID="${{ inputs.oss-key-id }}"
+        export INPUT_ACCESS-KEY-SECRET="${{ inputs.oss-key-secret }}"
+        export INPUT_GPG-PRIVATE-KEY="${{ inputs.gpg-private-key }}"
+        
+        # 使用Docker运行更新工具
+        docker run --rm \
+          -e INPUT_UBUNTU-DISTRO \
+          -e INPUT_DEB-PATHS \
+          -e INPUT_ARCHITECTURES \
+          -e INPUT_ACCESS-KEY-ID \
+          -e INPUT_ACCESS-KEY-SECRET \
+          -e INPUT_GPG-PRIVATE-KEY \
+          -v "${PWD}:/workspace" \
+          -w /workspace \
+          coscene-io/update-apt-source:latest
+        
+        echo "APT repository update completed."
+      
+    - name: Release lock
+      if: always()
+      shell: bash
+      run: |
+        echo "Repository lock released."
+
+branding:
+  icon: 'package'
+  color: 'blue'

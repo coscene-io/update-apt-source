@@ -10,14 +10,15 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/coscene-io/update-apt-source/config"
-	"github.com/coscene-io/update-apt-source/deb"
-	"github.com/coscene-io/update-apt-source/release"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/coscene-io/update-apt-source/config"
+	"github.com/coscene-io/update-apt-source/deb"
+	"github.com/coscene-io/update-apt-source/release"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"golang.org/x/crypto/openpgp"
@@ -194,11 +195,13 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 		return nil, fmt.Errorf("failed to get deb info: %v", err)
 	}
 
+	// 构造OSS中的文件路径
+	baseFilename := filepath.Base(cfg.DebPath)
 	debInfo.Filename = fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
 		distro,
 		cfg.Container,
 		cfg.Architecture,
-		filepath.Base(cfg.DebPath))
+		baseFilename)
 
 	debInfo.Size = size
 	debInfo.MD5sum = hex.EncodeToString(md5hash.Sum(nil))
@@ -211,8 +214,28 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload to OSS: %v", err)
 		}
-	}
 
+		parts := strings.Split(baseFilename, "_")
+		if len(parts) >= 3 {
+			packageName := parts[0]
+			architecture := parts[len(parts)-1]
+
+			latestFilename := fmt.Sprintf("%s_latest_%s", packageName, architecture)
+			latestOssPath := fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
+				distro,
+				cfg.Container,
+				cfg.Architecture,
+				latestFilename)
+
+			fmt.Printf("    Creating symlink %s -> %s\n", latestFilename, baseFilename)
+			err = bucket.PutSymlink(latestOssPath, debInfo.Filename)
+			if err != nil {
+				fmt.Printf("    Warning: Failed to create symlink: %v\n", err)
+			}
+		} else {
+			fmt.Printf("    Warning: Filename format not recognized for symlink creation: %s\n", baseFilename)
+		}
+	}
 	return debInfo, nil
 }
 
@@ -456,23 +479,23 @@ func PrintDirectoryTree(root string, indent string) error {
 	for i, entry := range entries {
 		// 确定当前项是否为最后一项
 		isLast := i == len(entries)-1
-		
+
 		// 根据是否为最后一项选择适当的前缀
 		connector := "├── "
 		if isLast {
 			connector = "└── "
 		}
-		
+
 		// 获取文件信息
 		info, err := entry.Info()
 		size := ""
 		if err == nil {
 			size = fmt.Sprintf("(%d bytes)", info.Size())
 		}
-		
+
 		// 打印当前项
 		fmt.Printf("%s%s%s %s\n", indent, connector, entry.Name(), size)
-		
+
 		// 如果是目录，则递归处理
 		if entry.IsDir() {
 			// 为子项确定新的缩进
@@ -480,7 +503,7 @@ func PrintDirectoryTree(root string, indent string) error {
 			if isLast {
 				newIndent = indent + "    "
 			}
-			
+
 			// 递归处理子目录
 			subdir := filepath.Join(root, entry.Name())
 			err := PrintDirectoryTree(subdir, newIndent)
@@ -490,6 +513,6 @@ func PrintDirectoryTree(root string, indent string) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
