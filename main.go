@@ -27,8 +27,6 @@ import (
 	"github.com/coscene-io/update-apt-source/locker"
 )
 
-var debug bool = false
-
 var supportedUbuntuDistros = []string{
 	"bionic",
 	"focal",
@@ -50,14 +48,14 @@ func main() {
 		panic("config invalid!")
 	}
 
-	fmt.Printf("Parse configuration:\n")
+	fmt.Printf("▶ Parse configuration:\n")
 	fmt.Printf("  Ubuntu Distribution: %s\n", cfg.UbuntuDistro)
 	fmt.Printf("  Number of packages to process: %d\n", len(cfg.DebPaths))
 	for i, path := range cfg.DebPaths {
 		fmt.Printf("    Package %d: %s (Architecture: %s)\n", i+1, path, cfg.Architectures[i])
 	}
 
-	fmt.Printf("\nInitialize OSS clinet:\n")
+	fmt.Printf("\n▶ Initialize OSS clinet... ")
 	client, err := oss.New(
 		"oss-cn-hangzhou.aliyuncs.com",
 		cfg.AccessKeyId,
@@ -66,7 +64,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize OSS client: %v", err))
 	}
-	fmt.Printf("  Initialize OSS client... ✓\n")
+	fmt.Printf(" ✓\n")
 
 	bucket, err := client.Bucket("coscene-download")
 	if err != nil {
@@ -149,11 +147,11 @@ func main() {
 		fmt.Printf("\n  Generating signature files... ")
 		err = signReleaseFiles(bucket, releaseContent, cfg, distro)
 		if err != nil {
-			panic(fmt.Sprintf("**Failed to sign files: %v**", err))
+			panic(fmt.Sprintf("Failed to sign files: %v", err))
 		}
 		fmt.Printf("✓\n")
 	}
-	fmt.Println("\nAll operations completed successfully! ✨")
+	fmt.Println("\nAll operations completed successfully! 🎉")
 }
 
 func parseConfig() config.Config {
@@ -218,35 +216,34 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 	debInfo.SHA256 = hex.EncodeToString(sha256hash.Sum(nil))
 
 	// Upload file
-	if !debug {
-		err = bucket.PutObjectFromFile("coscene-apt-source/"+debInfo.Filename, cfg.DebPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to upload to OSS: %v", err)
-		}
-
-		fmt.Printf("✓\n")
-		parts := strings.Split(baseFilename, "_")
-		if len(parts) >= 3 {
-			packageName := parts[0]
-			architecture := parts[len(parts)-1]
-
-			latestFilename := fmt.Sprintf("%s_latest_%s", packageName, architecture)
-			latestOssPath := fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
-				distro,
-				cfg.Container,
-				cfg.Architecture,
-				latestFilename)
-
-			fmt.Printf("    Creating symlink %s -> %s ...  ", latestFilename, baseFilename)
-			err = bucket.PutSymlink(latestOssPath, "coscene-apt-source/"+debInfo.Filename)
-			if err != nil {
-				fmt.Printf("    Warning: Failed to create symlink: %v\n", err)
-			}
-			fmt.Printf("✓\n")
-		} else {
-			fmt.Printf("    Warning: Filename format not recognized for symlink creation: %s\n", baseFilename)
-		}
+	err = bucket.PutObjectFromFile("coscene-apt-source/"+debInfo.Filename, cfg.DebPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload to OSS: %v", err)
 	}
+
+	fmt.Printf("✓\n")
+	parts := strings.Split(baseFilename, "_")
+	if len(parts) >= 3 {
+		packageName := parts[0]
+		architecture := parts[len(parts)-1]
+
+		latestFilename := fmt.Sprintf("%s_latest_%s", packageName, architecture)
+		latestOssPath := fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
+			distro,
+			cfg.Container,
+			cfg.Architecture,
+			latestFilename)
+
+		fmt.Printf("    Creating symlink %s -> %s ...  ", latestFilename, baseFilename)
+		err = bucket.PutSymlink(latestOssPath, "coscene-apt-source/"+debInfo.Filename)
+		if err != nil {
+			fmt.Printf("    Warning: Failed to create symlink: %v\n", err)
+		}
+		fmt.Printf("✓\n")
+	} else {
+		fmt.Printf("    Warning: Filename format not recognized for symlink creation: %s\n", baseFilename)
+	}
+
 	return debInfo, nil
 }
 
@@ -281,11 +278,9 @@ func updatePackages(bucket *oss.Bucket, cfg *config.SingleConfig, newDeb *deb.De
 		return "", fmt.Errorf("failed to write local Packages file: %v", err)
 	}
 
-	if !debug {
-		err = bucket.PutObject(packagesPath, strings.NewReader(content.String()))
-		if err != nil {
-			return "", err
-		}
+	err = bucket.PutObject(packagesPath, strings.NewReader(content.String()))
+	if err != nil {
+		return "", err
 	}
 
 	return content.String(), nil
@@ -309,13 +304,11 @@ func generatePackagesGz(bucket *oss.Bucket, content string, cfg *config.SingleCo
 		return fmt.Errorf("failed to close gzip writer: %v", err)
 	}
 
-	if !debug {
-		packagesGzPath := fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/Packages.gz",
-			distro,
-			cfg.Container,
-			cfg.Architecture)
-		err = bucket.PutObjectFromFile(packagesGzPath, localPackagesGzPath)
-	}
+	packagesGzPath := fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/Packages.gz",
+		distro,
+		cfg.Container,
+		cfg.Architecture)
+	err = bucket.PutObjectFromFile(packagesGzPath, localPackagesGzPath)
 	return err
 }
 
@@ -406,11 +399,9 @@ func updateRelease(bucket *oss.Bucket, configs []*config.SingleConfig, distro st
 		return "", fmt.Errorf("failed to write Release file: %v", err)
 	}
 
-	if !debug {
-		releasePath := fmt.Sprintf("coscene-apt-source/dists/%s/Release", distro)
-		if err := bucket.PutObject(releasePath, strings.NewReader(releaseString)); err != nil {
-			return "", err
-		}
+	releasePath = fmt.Sprintf("coscene-apt-source/dists/%s/Release", distro)
+	if err := bucket.PutObject(releasePath, strings.NewReader(releaseString)); err != nil {
+		return "", err
 	}
 
 	return releaseString, nil
@@ -454,11 +445,10 @@ func signReleaseFiles(bucket *oss.Bucket, releaseContent string, cfg config.Conf
 	w.Close()
 
 	releasePath := fmt.Sprintf("coscene-apt-source/dists/%s/Release.gpg", distro)
-	if !debug {
-		err = bucket.PutObject(releasePath, bytes.NewReader(gpgBuf.Bytes()))
-		if err != nil {
-			return err
-		}
+
+	err = bucket.PutObject(releasePath, bytes.NewReader(gpgBuf.Bytes()))
+	if err != nil {
+		return err
 	}
 
 	var inReleaseBuf bytes.Buffer

@@ -19,7 +19,7 @@ type Locker struct {
 }
 
 func NewLocker(bucket *oss.Bucket) *Locker {
-	fmt.Println("Initialize Locker...")
+	fmt.Println("\nInitialize Locker... ✓")
 	return &Locker{bucket: bucket}
 }
 
@@ -27,11 +27,11 @@ func (l *Locker) Lock() error {
 	lockContent := fmt.Sprintf("Locked by process at %s", time.Now().Format(time.RFC3339))
 	exist, err := l.bucket.IsObjectExist(lockFilePath)
 	if err != nil {
-		return fmt.Errorf("check lock file failed: %v", err)
+		return fmt.Errorf("❌ check lock file failed: %v", err)
 	}
 
 	if exist {
-		fmt.Println("  lock file found, waiting for release...")
+		fmt.Println("  ⏳ lock file found, waiting for release...")
 		deadline := time.Now().Add(maxLockWait)
 
 		for time.Now().Before(deadline) {
@@ -39,47 +39,47 @@ func (l *Locker) Lock() error {
 
 			exist, err := l.bucket.IsObjectExist(lockFilePath)
 			if err != nil {
-				return fmt.Errorf("check lock file failed: %v", err)
+				return fmt.Errorf("❌ check lock file failed: %v", err)
 			}
 
 			if !exist {
 				break
 			}
 
-			fmt.Println("  lock file still exists, waiting...")
+			fmt.Println("  ⏳ lock file still exists, waiting...")
 		}
 
 		exist, err = l.bucket.IsObjectExist(lockFilePath)
 		if err != nil {
-			return fmt.Errorf("check lock file failed: %v", err)
+			return fmt.Errorf("❌ check lock file failed: %v", err)
 		}
 
 		if exist {
-			return fmt.Errorf("timeout waiting for lock (%v)", maxLockWait)
+			return fmt.Errorf("❌ timeout waiting for lock (%v)", maxLockWait)
 		}
 	}
 
 	err = l.bucket.PutObject(lockFilePath, strings.NewReader(lockContent))
 	if err != nil {
-		return fmt.Errorf("create lock file failed: %v", err)
+		return fmt.Errorf("❌ create lock file failed: %v", err)
 	}
 
-	fmt.Println("\nApt source repo locking!")
+	fmt.Println("\n🔒 Apt source repo locking!")
 	return nil
 }
 
 func (l *Locker) Unlock() error {
 	exist, err := l.bucket.IsObjectExist(lockFilePath)
 	if err != nil {
-		return fmt.Errorf("check lock file failed: %v", err)
+		return fmt.Errorf("❌ check lock file failed: %v", err)
 	}
 
 	if exist {
 		err = l.bucket.DeleteObject(lockFilePath)
 		if err != nil {
-			return fmt.Errorf("delete lock file failed: %v", err)
+			return fmt.Errorf("❌ delete lock file failed: %v", err)
 		}
-		fmt.Println("\nApt source repo unlocked!")
+		fmt.Println("\n🔓 Apt source repo unlocked!")
 	}
 
 	return nil
