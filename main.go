@@ -10,6 +10,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/clearsign"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,9 +24,7 @@ import (
 	"github.com/coscene-io/update-apt-source/release"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
-	"golang.org/x/crypto/openpgp/clearsign"
+	"github.com/coscene-io/update-apt-source/locker"
 )
 
 var debug bool = false
@@ -36,14 +37,13 @@ var supportedUbuntuDistros = []string{
 }
 
 func main() {
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("Get current working directory failed: %v\n", err)
-	} else {
-		fmt.Printf("Current working directory: %s\n", cwd)
-	}
-	PrintDirectoryTree(cwd, "")
+	// cwd, err := os.Getwd()
+	// if err != nil {
+	// 	fmt.Printf("Get current working directory failed: %v\n", err)
+	// } else {
+	// 	fmt.Printf("Current working directory: %s\n", cwd)
+	// }
+	// PrintDirectoryTree(cwd, "")
 
 	cfg := parseConfig()
 	if !cfg.IsValid() {
@@ -73,6 +73,17 @@ func main() {
 		panic(fmt.Sprintf("Failed to get bucket: %v", err))
 	}
 	fmt.Printf("  Bucket accessing... ✓\n")
+
+	l := locker.NewLocker(bucket)
+	err = l.Lock()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to lock bucket: %v", err))
+	}
+	defer func() {
+		if err := l.Unlock(); err != nil {
+			fmt.Printf("warning： release lock failed: %v\n", err)
+		}
+	}()
 
 	configMap := make(map[string][]*config.SingleConfig)
 	if cfg.UbuntuDistro == "all" {
