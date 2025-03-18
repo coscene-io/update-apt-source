@@ -147,24 +147,24 @@ func main() {
 }
 
 func parseConfig() config.Config {
-	debPaths := strings.Split(os.Getenv("INPUT_DEB-PATHS"), ",")
+	debPaths := strings.Split(os.Getenv("INPUT_DEB_PATHS"), ",")
 	architectures := strings.Split(os.Getenv("INPUT_ARCHITECTURES"), ",")
 
 	if len(debPaths) != len(architectures) {
 		panic("deb-paths and architectures must have the same number of elements")
 	}
 
-	privateKey, err := base64.StdEncoding.DecodeString(os.Getenv("INPUT_GPG-PRIVATE-KEY"))
+	privateKey, err := base64.StdEncoding.DecodeString(os.Getenv("INPUT_GPG_PRIVATE_KEY"))
 	if err != nil {
 		panic("deb-paths and architectures must have the same number of elements")
 	}
 
 	return config.Config{
-		UbuntuDistro:    os.Getenv("INPUT_UBUNTU-DISTRO"),
+		UbuntuDistro:    os.Getenv("INPUT_UBUNTU_DISTRO"),
 		DebPaths:        debPaths,
 		Architectures:   architectures,
-		AccessKeyId:     os.Getenv("INPUT_ACCESS-KEY-ID"),
-		AccessKeySecret: os.Getenv("INPUT_ACCESS-KEY-SECRET"),
+		AccessKeyId:     os.Getenv("INPUT_ACCESS_KEY_ID"),
+		AccessKeySecret: os.Getenv("INPUT_ACCESS_KEY_SECRET"),
 		GpgPrivateKey:   privateKey,
 	}
 }
