@@ -24,48 +24,8 @@ inputs:
     required: true
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Set up repository lock
-      uses: softprops/turnstyle@v2
-      with:
-        poll-interval-seconds: 10
-        same-branch-only: false
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      
-    - name: Run Update APT Source
-      shell: bash
-      run: |
-        echo "Starting APT repository update process..."
-        
-        # 设置环境变量 - 使用下划线而非连字符
-        export INPUT_UBUNTU_DISTRO="${{ inputs.ubuntu-distro }}"
-        export INPUT_DEB_PATHS="${{ inputs.deb-paths }}"
-        export INPUT_ARCHITECTURES="${{ inputs.architectures }}"
-        export INPUT_ACCESS_KEY_ID="${{ inputs.access-key-id }}"
-        export INPUT_ACCESS_KEY_SECRET="${{ inputs.access-key-secret }}"
-        export INPUT_GPG_PRIVATE_KEY="${{ inputs.gpg-private-key }}"
-        
-        # 使用Docker运行更新工具
-        docker run --rm \
-          -e INPUT_UBUNTU_DISTRO \
-          -e INPUT_DEB_PATHS \
-          -e INPUT_ARCHITECTURES \
-          -e INPUT_ACCESS_KEY_ID \
-          -e INPUT_ACCESS_KEY_SECRET \
-          -e INPUT_GPG_PRIVATE_KEY \
-          -v "${PWD}:/workspace" \
-          -w /workspace \
-          coscene-io/update-apt-source:latest
-        
-        echo "APT repository update completed."
-      
-    - name: Release lock
-      if: always()
-      shell: bash
-      run: |
-        echo "Repository lock released."
+  using: 'docker'
+  image: 'Dockerfile'
 
 branding:
   icon: 'package'
