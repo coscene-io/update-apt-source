@@ -205,9 +205,8 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 		return nil, fmt.Errorf("failed to get deb info: %v", err)
 	}
 
-	// 构造OSS中的文件路径
 	baseFilename := filepath.Base(cfg.DebPath)
-	debInfo.Filename = fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
+	debInfo.Filename = fmt.Sprintf("dists/%s/%s/binary-%s/%s",
 		distro,
 		cfg.Container,
 		cfg.Architecture,
@@ -489,38 +488,30 @@ func PrintDirectoryTree(root string, indent string) error {
 	}
 
 	for i, entry := range entries {
-		// 确定当前项是否为最后一项
 		isLast := i == len(entries)-1
 
-		// 根据是否为最后一项选择适当的前缀
 		connector := "├── "
 		if isLast {
 			connector = "└── "
 		}
 
-		// 获取文件信息
 		info, err := entry.Info()
 		size := ""
 		if err == nil {
 			size = fmt.Sprintf("(%d bytes)", info.Size())
 		}
 
-		// 打印当前项
 		fmt.Printf("%s%s%s %s\n", indent, connector, entry.Name(), size)
 
-		// 如果是目录，则递归处理
 		if entry.IsDir() {
-			// 为子项确定新的缩进
 			newIndent := indent + "│   "
 			if isLast {
 				newIndent = indent + "    "
 			}
 
-			// 递归处理子目录
 			subdir := filepath.Join(root, entry.Name())
 			err := PrintDirectoryTree(subdir, newIndent)
 			if err != nil {
-				// 仅记录错误，继续处理其他条目
 				fmt.Printf("%s    [ERROR: %v]\n", newIndent, err)
 			}
 		}
