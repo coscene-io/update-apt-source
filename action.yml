@@ -4,22 +4,22 @@ author: 'coScene Technologies'
 
 # 定义输入参数
 inputs:
-  ubuntu-distro:
+  ubuntu_distro:
     description: 'Ubuntu distribution codename (e.g., focal, jammy, or all)'
     required: true
-  deb-paths:
+  deb_paths:
     description: 'Paths to .deb packages, separated by newlines'
     required: true
   architectures:
     description: 'Architectures for each .deb package, in the same order as deb-paths'
     required: true
-  access-key-id:
+  access_key_id:
     description: 'OSS access key ID'
     required: true
-  access-key-secret:
+  access_key_secret:
     description: 'OSS access key secret'
     required: true
-  gpg-private-key:
+  gpg_private_key:
     description: 'GPG private key for signing (base64 encoded)'
     required: true
 
