@@ -28,33 +28,31 @@ jobs:
   update-apt-repo:
   runs-on: ubuntu-latest
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
     - name: Update APT Source
-      uses: coscene-io/update-apt-source@v1
+      uses: coscene-io/update-apt-source@main
       with:
-        ubuntu-distro: noble
-        deb-paths: |
+        ubuntu_distro: noble
+        deb_paths: |
             ./dist/myapp_1.0.0_amd64.deb
             ./dist/myapp_1.0.0_arm64.deb
         architectures: |
             amd64
             arm64
-        oss-key-id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-        oss-key-secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+        access_key_id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+        access_key_secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
 ```
 
 ## 输入参数
 
-| 参数名               | 描述                                                    | 是否必需 |
-|-------------------|-------------------------------------------------------|------|
-| `ubuntu-distro`   | Ubuntu发行版代号(如`focal`, `jammy` 等，或者 `all`)             | 是    |
-| `deb-paths`       | .deb包的路径，多个路径用换行符分隔                                   | 是    |
-| `architectures`   | 对应每个.deb包的架构，多个架构用换行符分隔，顺序与deb-paths一致，数量与deb-paths一致 | 是    |
-| `oss-key-id`      | 阿里云OSS的Access Key ID                                  | 是    |
-| `oss-key-secret`  | 阿里云OSS的Access Key Secret                              | 是    |
-| `gpg-private-key` | 用于签名的GPG私钥                                            | 是    |
+| 参数名                 | 描述                                                    | 是否必需 |
+|---------------------|-------------------------------------------------------|------|
+| `ubuntu_distro`     | Ubuntu发行版代号(如`focal`, `jammy` 等，或者 `all`)             | 是    |
+| `deb_paths`         | .deb包的路径，多个路径用换行符分隔                                   | 是    |
+| `architectures`     | 对应每个.deb包的架构，多个架构用换行符分隔，顺序与deb-paths一致，数量与deb-paths一致 | 是    |
+| `access_key_id`     | 阿里云OSS的Access Key ID                                  | 是    |
+| `access_key_secret` | 阿里云OSS的Access Key Secret                              | 是    |
+| `gpg_private_key`   | 用于签名的GPG私钥                                            | 是    |
 
 ## 工作原理
 

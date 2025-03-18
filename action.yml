@@ -1,24 +1,32 @@
-name: 'Update APT Repository'
-description: 'Updates APT repository with new deb packages'
+name: 'Update APT Source'
+description: 'A GitHub Action for managing Debian/Ubuntu APT repositories'
+author: 'coScene Technologies'
+
+# 定义输入参数
 inputs:
-  ubuntu-distro:
-    description: 'Ubuntu distribution (focal/jammy/all)'
+  ubuntu_distro:
+    description: 'Ubuntu distribution codename (e.g., focal, jammy, or all)'
     required: true
-  deb-paths:
-    description: 'Path to the deb file'
+  deb_paths:
+    description: 'Paths to .deb packages, separated by newlines'
     required: true
   architectures:
-    description: 'Package architecture (amd64/arm64)'
+    description: 'Architectures for each .deb package, in the same order as deb-paths'
     required: true
-  access-key-id:
+  access_key_id:
     description: 'OSS access key ID'
     required: true
-  access-key-secret:
+  access_key_secret:
     description: 'OSS access key secret'
     required: true
-  gpg-private-key:
-    description: 'Base64 encoded GPG private key'
+  gpg_private_key:
+    description: 'GPG private key for signing (base64 encoded)'
     required: true
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
+
+branding:
+  icon: 'package'
+  color: 'blue'

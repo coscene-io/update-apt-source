@@ -10,19 +10,21 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/coscene-io/update-apt-source/config"
-	"github.com/coscene-io/update-apt-source/deb"
-	"github.com/coscene-io/update-apt-source/release"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/clearsign"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/coscene-io/update-apt-source/config"
+	"github.com/coscene-io/update-apt-source/deb"
+	"github.com/coscene-io/update-apt-source/release"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
-	"golang.org/x/crypto/openpgp/clearsign"
+	"github.com/coscene-io/update-apt-source/locker"
 )
 
 var debug bool = false
@@ -35,6 +37,14 @@ var supportedUbuntuDistros = []string{
 }
 
 func main() {
+	// cwd, err := os.Getwd()
+	// if err != nil {
+	// 	fmt.Printf("Get current working directory failed: %v\n", err)
+	// } else {
+	// 	fmt.Printf("Current working directory: %s\n", cwd)
+	// }
+	// PrintDirectoryTree(cwd, "")
+
 	cfg := parseConfig()
 	if !cfg.IsValid() {
 		panic("config invalid!")
@@ -63,6 +73,17 @@ func main() {
 		panic(fmt.Sprintf("Failed to get bucket: %v", err))
 	}
 	fmt.Printf("  Bucket accessing... ✓\n")
+
+	l := locker.NewLocker(bucket)
+	err = l.Lock()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to lock bucket: %v", err))
+	}
+	defer func() {
+		if err := l.Unlock(); err != nil {
+			fmt.Printf("warning： release lock failed: %v\n", err)
+		}
+	}()
 
 	configMap := make(map[string][]*config.SingleConfig)
 	if cfg.UbuntuDistro == "all" {
@@ -137,24 +158,24 @@ func main() {
 }
 
 func parseConfig() config.Config {
-	debPaths := strings.Split(os.Getenv("INPUT_DEB-PATHS"), ",")
+	debPaths := strings.Split(os.Getenv("INPUT_DEB_PATHS"), ",")
 	architectures := strings.Split(os.Getenv("INPUT_ARCHITECTURES"), ",")
 
 	if len(debPaths) != len(architectures) {
 		panic("deb-paths and architectures must have the same number of elements")
 	}
 
-	privateKey, err := base64.StdEncoding.DecodeString(os.Getenv("INPUT_GPG-PRIVATE-KEY"))
+	privateKey, err := base64.StdEncoding.DecodeString(os.Getenv("INPUT_GPG_PRIVATE_KEY"))
 	if err != nil {
 		panic("deb-paths and architectures must have the same number of elements")
 	}
 
 	return config.Config{
-		UbuntuDistro:    os.Getenv("INPUT_UBUNTU-DISTRO"),
+		UbuntuDistro:    os.Getenv("INPUT_UBUNTU_DISTRO"),
 		DebPaths:        debPaths,
 		Architectures:   architectures,
-		AccessKeyId:     os.Getenv("INPUT_ACCESS-KEY-ID"),
-		AccessKeySecret: os.Getenv("INPUT_ACCESS-KEY-SECRET"),
+		AccessKeyId:     os.Getenv("INPUT_ACCESS_KEY_ID"),
+		AccessKeySecret: os.Getenv("INPUT_ACCESS_KEY_SECRET"),
 		GpgPrivateKey:   privateKey,
 	}
 }
@@ -185,11 +206,13 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 		return nil, fmt.Errorf("failed to get deb info: %v", err)
 	}
 
+	// 构造OSS中的文件路径
+	baseFilename := filepath.Base(cfg.DebPath)
 	debInfo.Filename = fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
 		distro,
 		cfg.Container,
 		cfg.Architecture,
-		filepath.Base(cfg.DebPath))
+		baseFilename)
 
 	debInfo.Size = size
 	debInfo.MD5sum = hex.EncodeToString(md5hash.Sum(nil))
@@ -202,8 +225,28 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload to OSS: %v", err)
 		}
-	}
 
+		parts := strings.Split(baseFilename, "_")
+		if len(parts) >= 3 {
+			packageName := parts[0]
+			architecture := parts[len(parts)-1]
+
+			latestFilename := fmt.Sprintf("%s_latest_%s", packageName, architecture)
+			latestOssPath := fmt.Sprintf("coscene-apt-source/dists/%s/%s/binary-%s/%s",
+				distro,
+				cfg.Container,
+				cfg.Architecture,
+				latestFilename)
+
+			fmt.Printf("    Creating symlink %s -> %s\n", latestFilename, baseFilename)
+			err = bucket.PutSymlink(latestOssPath, debInfo.Filename)
+			if err != nil {
+				fmt.Printf("    Warning: Failed to create symlink: %v\n", err)
+			}
+		} else {
+			fmt.Printf("    Warning: Filename format not recognized for symlink creation: %s\n", baseFilename)
+		}
+	}
 	return debInfo, nil
 }
 
@@ -436,4 +479,51 @@ func signReleaseFiles(bucket *oss.Bucket, releaseContent string, cfg config.Conf
 
 	inReleasePath := fmt.Sprintf("coscene-apt-source/dists/%s/InRelease", distro)
 	return bucket.PutObject(inReleasePath, bytes.NewReader(inReleaseBuf.Bytes()))
+}
+
+func PrintDirectoryTree(root string, indent string) error {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return fmt.Errorf("read directory %s failed: %v", root, err)
+	}
+
+	for i, entry := range entries {
+		// 确定当前项是否为最后一项
+		isLast := i == len(entries)-1
+
+		// 根据是否为最后一项选择适当的前缀
+		connector := "├── "
+		if isLast {
+			connector = "└── "
+		}
+
+		// 获取文件信息
+		info, err := entry.Info()
+		size := ""
+		if err == nil {
+			size = fmt.Sprintf("(%d bytes)", info.Size())
+		}
+
+		// 打印当前项
+		fmt.Printf("%s%s%s %s\n", indent, connector, entry.Name(), size)
+
+		// 如果是目录，则递归处理
+		if entry.IsDir() {
+			// 为子项确定新的缩进
+			newIndent := indent + "│   "
+			if isLast {
+				newIndent = indent + "    "
+			}
+
+			// 递归处理子目录
+			subdir := filepath.Join(root, entry.Name())
+			err := PrintDirectoryTree(subdir, newIndent)
+			if err != nil {
+				// 仅记录错误，继续处理其他条目
+				fmt.Printf("%s    [ERROR: %v]\n", newIndent, err)
+			}
+		}
+	}
+
+	return nil
 }
