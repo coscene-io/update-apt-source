@@ -219,7 +219,7 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 
 	// Upload file
 	if !debug {
-		err = bucket.PutObjectFromFile(debInfo.Filename, cfg.DebPath)
+		err = bucket.PutObjectFromFile("coscene-apt-source/"+debInfo.Filename, cfg.DebPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload to OSS: %v", err)
 		}
