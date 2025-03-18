@@ -76,7 +76,6 @@ func ParseReleaseFile(reader io.Reader) *DistroRelease {
 			continue
 		}
 
-		// 判断是否是新的校验和部分
 		if strings.Contains(line, "MD5Sum:") {
 			currentSection = "MD5Sum"
 			continue
@@ -91,7 +90,6 @@ func ParseReleaseFile(reader io.Reader) *DistroRelease {
 			continue
 		}
 
-		// 处理校验和部分
 		if currentSection != "" && strings.HasPrefix(line, " ") {
 			parts := strings.Fields(line)
 			if len(parts) >= 3 {
@@ -119,7 +117,6 @@ func ParseReleaseFile(reader io.Reader) *DistroRelease {
 			continue
 		}
 
-		// 处理元数据部分
 		parts := strings.SplitN(line, ": ", 2)
 		if len(parts) != 2 {
 			continue

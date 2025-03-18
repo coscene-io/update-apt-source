@@ -65,7 +65,6 @@ func (p *DebFileInfo) Format() string {
 }
 
 func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
-	// 读取 ar 文件头 (8 bytes global header)
 	arHeader := make([]byte, 8)
 	if _, err := io.ReadFull(file, arHeader); err != nil {
 		return nil, fmt.Errorf("failed to read ar header: %v", err)
@@ -74,11 +73,9 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 		return nil, fmt.Errorf("invalid ar file format")
 	}
 
-	// 查找 control.tar.gz, control.tar.xz 或 control.tar.zst
 	var controlData []byte
 	var compressionType string
 	for {
-		// 读取文件头 (60 bytes)
 		header := make([]byte, 60)
 		if _, err := io.ReadFull(file, header); err != nil {
 			if err == io.EOF {
@@ -87,7 +84,6 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 			return nil, fmt.Errorf("failed to read ar file header: %v", err)
 		}
 
-		// 解析文件名和大小
 		filename := strings.TrimRight(string(header[0:16]), " ")
 		sizeStr := strings.TrimSpace(string(header[48:58]))
 		fileSize, err := strconv.ParseInt(sizeStr, 10, 64)
@@ -95,15 +91,12 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 			return nil, fmt.Errorf("failed to parse file size: %v", err)
 		}
 
-		// 检查是否是 control 文件（支持 gz、xz 和 zst 格式）
 		if filename == "control.tar.gz" || filename == "control.tar.xz" || filename == "control.tar.zst" {
-			// 读取压缩的 control 文件内容
 			controlData = make([]byte, fileSize)
 			if _, err := io.ReadFull(file, controlData); err != nil {
 				return nil, fmt.Errorf("failed to read %s: %v", filename, err)
 			}
 
-			// 确定压缩类型
 			if filename == "control.tar.xz" {
 				compressionType = "xz"
 			} else if filename == "control.tar.zst" {
@@ -114,7 +107,6 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 			break
 		}
 
-		// 跳过文件内容
 		if _, err := file.Seek(fileSize+(fileSize%2), 1); err != nil {
 			return nil, fmt.Errorf("failed to skip file content: %v", err)
 		}
@@ -124,7 +116,6 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 		return nil, fmt.Errorf("control.tar.gz/xz/zst not found in deb package")
 	}
 
-	// 根据格式选择解压方式
 	var reader io.Reader
 	var closeReader func() error = nil
 
@@ -158,10 +149,8 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 		defer closeReader()
 	}
 
-	// 解析 tar 文件
 	tarReader := tar.NewReader(reader)
 
-	// 查找并读取 control 文件
 	var controlContent []byte
 	for {
 		header, err := tarReader.Next()
@@ -193,7 +182,6 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// 处理多行字段（主要是Description）
 		if strings.HasPrefix(line, " ") && lastField == "Description" {
 			if multiLineDescription.Len() > 0 {
 				multiLineDescription.WriteString("\n")
@@ -202,7 +190,6 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 			continue
 		}
 
-		// 如果之前收集了多行Description，现在应用它
 		if multiLineDescription.Len() > 0 && lastField == "Description" {
 			if debInfo.Description != "" {
 				debInfo.Description = debInfo.Description + "\n" + multiLineDescription.String()
@@ -247,7 +234,6 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 		}
 	}
 
-	// 确保处理最后一个多行Description
 	if multiLineDescription.Len() > 0 && lastField == "Description" {
 		if debInfo.Description != "" {
 			debInfo.Description = debInfo.Description + "\n" + multiLineDescription.String()
@@ -269,7 +255,6 @@ func ParsePackagesFile(reader io.Reader) map[string]*DebFileInfo {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// 处理多行字段（主要是Description）
 		if strings.HasPrefix(line, " ") && lastField == "Description" {
 			if multiLineDescription.Len() > 0 {
 				multiLineDescription.WriteString("\n")
@@ -278,7 +263,6 @@ func ParsePackagesFile(reader io.Reader) map[string]*DebFileInfo {
 			continue
 		}
 
-		// 如果之前收集了多行Description，现在应用它
 		if multiLineDescription.Len() > 0 && lastField == "Description" {
 			if currentPackage.Description != "" {
 				currentPackage.Description = currentPackage.Description + "\n" + multiLineDescription.String()
@@ -339,7 +323,6 @@ func ParsePackagesFile(reader io.Reader) map[string]*DebFileInfo {
 		}
 	}
 
-	// 处理最后一个多行Description和最后一个包
 	if multiLineDescription.Len() > 0 && lastField == "Description" {
 		if currentPackage.Description != "" {
 			currentPackage.Description = currentPackage.Description + "\n" + multiLineDescription.String()
