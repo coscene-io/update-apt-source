@@ -10,14 +10,15 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
-	"golang.org/x/crypto/openpgp/clearsign"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/clearsign"
 
 	"github.com/coscene-io/update-apt-source/config"
 	"github.com/coscene-io/update-apt-source/deb"
@@ -178,6 +179,13 @@ func parseConfig() config.Config {
 }
 
 func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) (*deb.DebFileInfo, error) {
+	debDir := filepath.Dir(cfg.DebPath)
+	fmt.Printf("    Local file structure (%s):\n", debDir)
+	err := PrintDirectoryTree(debDir, "    ")
+	if err != nil {
+		fmt.Printf("    Warning - cannot print directory tree: %v\n", err)
+	}
+
 	file, err := os.Open(cfg.DebPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %v", err)
@@ -214,6 +222,11 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 	debInfo.MD5sum = hex.EncodeToString(md5hash.Sum(nil))
 	debInfo.SHA1 = hex.EncodeToString(sha1hash.Sum(nil))
 	debInfo.SHA256 = hex.EncodeToString(sha256hash.Sum(nil))
+
+	// 打印上传信息和路径
+	fmt.Printf("    Uploading file:\n")
+	fmt.Printf("    Local path: %s\n", cfg.DebPath)
+	fmt.Printf("    Remote path: coscene-apt-source/%s\n", debInfo.Filename)
 
 	// Upload file
 	err = bucket.PutObjectFromFile("coscene-apt-source/"+debInfo.Filename, cfg.DebPath)
