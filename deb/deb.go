@@ -85,6 +85,7 @@ func GetInfoFromDebFile(file *os.File) (*DebFileInfo, error) {
 		}
 
 		filename := strings.TrimRight(string(header[0:16]), " ")
+		filename = strings.TrimSuffix(filename, "/")
 		sizeStr := strings.TrimSpace(string(header[48:58]))
 		fileSize, err := strconv.ParseInt(sizeStr, 10, 64)
 		if err != nil {

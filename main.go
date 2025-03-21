@@ -215,13 +215,6 @@ func parseMultilineOrCommaInput(input string) []string {
 }
 
 func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) (*deb.DebFileInfo, error) {
-	debDir := filepath.Dir(cfg.DebPath)
-	fmt.Printf("    Local file structure (%s):\n", debDir)
-	err := PrintDirectoryTree(debDir, "    ")
-	if err != nil {
-		fmt.Printf("    Warning - cannot print directory tree: %v\n", err)
-	}
-
 	file, err := os.Open(cfg.DebPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %v", err)
