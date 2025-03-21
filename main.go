@@ -159,12 +159,12 @@ func parseConfig() config.Config {
 	// Read environment variables
 	debPathsStr := os.Getenv("INPUT_DEB_PATHS")
 	architecturesStr := os.Getenv("INPUT_ARCHITECTURES")
-	distroStr := os.Getenv("INPUT_DISTROS")
+	distroStr := os.Getenv("INPUT_UBUNTU_DISTRO")
 
 	fmt.Println("  Environment variables:")
 	fmt.Println("    INPUT_DEB_PATHS:", debPathsStr)
 	fmt.Println("    INPUT_ARCHITECTURES:", architecturesStr)
-	fmt.Println("    INPUT_DISTROS:", distroStr)
+	fmt.Println("    INPUT_UBUNTU_DISTRO:", distroStr)
 
 	// Support both multiline format and comma-separated format
 	var debPaths, architectures []string
