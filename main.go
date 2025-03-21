@@ -156,16 +156,26 @@ func main() {
 }
 
 func parseConfig() config.Config {
-	debPaths := strings.Split(os.Getenv("INPUT_DEB_PATHS"), ",")
-	architectures := strings.Split(os.Getenv("INPUT_ARCHITECTURES"), ",")
+	// Read environment variables
+	debPathsStr := os.Getenv("INPUT_DEB_PATHS")
+	architecturesStr := os.Getenv("INPUT_ARCHITECTURES")
+
+	// Support both multiline format and comma-separated format
+	var debPaths, architectures []string
+
+	// Process deb_paths
+	debPaths = parseMultilineOrCommaInput(debPathsStr)
+
+	// Process architectures
+	architectures = parseMultilineOrCommaInput(architecturesStr)
 
 	if len(debPaths) != len(architectures) {
-		panic("deb-paths and architectures must have the same number of elements")
+		panic("deb_paths and architectures must have the same number of elements")
 	}
 
 	privateKey, err := base64.StdEncoding.DecodeString(os.Getenv("INPUT_GPG_PRIVATE_KEY"))
 	if err != nil {
-		panic("deb-paths and architectures must have the same number of elements")
+		panic("Unable to decode GPG private key: " + err.Error())
 	}
 
 	return config.Config{
@@ -176,6 +186,32 @@ func parseConfig() config.Config {
 		AccessKeySecret: os.Getenv("INPUT_ACCESS_KEY_SECRET"),
 		GpgPrivateKey:   privateKey,
 	}
+}
+
+// Parse multiline or comma-separated input
+func parseMultilineOrCommaInput(input string) []string {
+	// First try splitting by newline
+	lines := strings.Split(input, "\n")
+
+	// If only one line, it might be comma-separated format
+	if len(lines) == 1 {
+		// Try splitting by comma (backward compatibility)
+		parts := strings.Split(input, ",")
+		if len(parts) > 1 {
+			lines = parts
+		}
+	}
+
+	// Clean up results (remove empty lines and trim whitespace)
+	var result []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			result = append(result, line)
+		}
+	}
+
+	return result
 }
 
 func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) (*deb.DebFileInfo, error) {
