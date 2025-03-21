@@ -49,14 +49,14 @@ func main() {
 		panic("config invalid!")
 	}
 
-	fmt.Printf("▶ Parse configuration:\n")
+	fmt.Printf("Parse configuration:\n")
 	fmt.Printf("  Ubuntu Distribution: %s\n", cfg.UbuntuDistro)
 	fmt.Printf("  Number of packages to process: %d\n", len(cfg.DebPaths))
 	for i, path := range cfg.DebPaths {
 		fmt.Printf("    Package %d: %s (Architecture: %s)\n", i+1, path, cfg.Architectures[i])
 	}
 
-	fmt.Printf("\n▶ Initialize OSS clinet... ")
+	fmt.Printf("\nInitialize OSS clinet... ")
 	client, err := oss.New(
 		"oss-cn-hangzhou.aliyuncs.com",
 		cfg.AccessKeyId,
@@ -159,6 +159,12 @@ func parseConfig() config.Config {
 	// Read environment variables
 	debPathsStr := os.Getenv("INPUT_DEB_PATHS")
 	architecturesStr := os.Getenv("INPUT_ARCHITECTURES")
+	distroStr := os.Getenv("INPUT_DISTROS")
+
+	fmt.Println("  Environment variables:")
+	fmt.Println("    INPUT_DEB_PATHS:", debPathsStr)
+	fmt.Println("    INPUT_ARCHITECTURES:", architecturesStr)
+	fmt.Println("    INPUT_DISTROS:", distroStr)
 
 	// Support both multiline format and comma-separated format
 	var debPaths, architectures []string
@@ -179,7 +185,7 @@ func parseConfig() config.Config {
 	}
 
 	return config.Config{
-		UbuntuDistro:    os.Getenv("INPUT_UBUNTU_DISTRO"),
+		UbuntuDistro:    distroStr,
 		DebPaths:        debPaths,
 		Architectures:   architectures,
 		AccessKeyId:     os.Getenv("INPUT_ACCESS_KEY_ID"),
@@ -251,11 +257,6 @@ func uploadDebFile(bucket *oss.Bucket, cfg *config.SingleConfig, distro string) 
 	debInfo.MD5sum = hex.EncodeToString(md5hash.Sum(nil))
 	debInfo.SHA1 = hex.EncodeToString(sha1hash.Sum(nil))
 	debInfo.SHA256 = hex.EncodeToString(sha256hash.Sum(nil))
-
-	// 打印上传信息和路径
-	fmt.Printf("    Uploading file:\n")
-	fmt.Printf("    Local path: %s\n", cfg.DebPath)
-	fmt.Printf("    Remote path: coscene-apt-source/%s\n", debInfo.Filename)
 
 	// Upload file
 	err = bucket.PutObjectFromFile("coscene-apt-source/"+debInfo.Filename, cfg.DebPath)
