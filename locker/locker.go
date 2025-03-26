@@ -2,85 +2,88 @@ package locker
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/coscene-io/update-apt-source/storage"
 )
 
 const (
-	lockFilePath      = "coscene-apt-source/apt-repo.lock"
+	lockFilePath      = "apt-repo.lock"
 	maxLockWait       = 60 * time.Minute
 	lockCheckInterval = 10 * time.Second
 )
 
 type Locker struct {
-	bucket *oss.Bucket
+	storage    storage.StorageProvider
+	bucketName string
 }
 
-func NewLocker(bucket *oss.Bucket) *Locker {
-	fmt.Println("Initialize Locker...")
-	return &Locker{bucket: bucket}
+func NewLocker(storage storage.StorageProvider, bucketName string) *Locker {
+	fmt.Println("\nInitializing lock manager... ✓")
+	return &Locker{
+		storage:    storage,
+		bucketName: bucketName,
+	}
 }
 
 func (l *Locker) Lock() error {
 	lockContent := fmt.Sprintf("Locked by process at %s", time.Now().Format(time.RFC3339))
-	exist, err := l.bucket.IsObjectExist(lockFilePath)
+
+	// Check if the lock file exists
+	exists, err := l.storage.HeadObject(l.bucketName, lockFilePath)
 	if err != nil {
-		return fmt.Errorf("check lock file failed: %v", err)
+		return fmt.Errorf("❌ Check lock file failed: %v", err)
 	}
 
-	if exist {
-		fmt.Println("  lock file found, waiting for release...")
+	if exists {
+		fmt.Println("  ⏳ Lock file exists, waiting for release...")
 		deadline := time.Now().Add(maxLockWait)
 
 		for time.Now().Before(deadline) {
 			time.Sleep(lockCheckInterval)
 
-			exist, err := l.bucket.IsObjectExist(lockFilePath)
+			exists, err = l.storage.HeadObject(l.bucketName, lockFilePath)
 			if err != nil {
-				return fmt.Errorf("check lock file failed: %v", err)
+				return fmt.Errorf("❌ Check lock file failed: %v", err)
 			}
 
-			if !exist {
+			if !exists {
 				break
 			}
 
-			fmt.Println("  lock file still exists, waiting...")
+			fmt.Println("  ⏳ Lock file still exists, continue waiting...")
 		}
-
-		exist, err = l.bucket.IsObjectExist(lockFilePath)
-		if err != nil {
-			return fmt.Errorf("check lock file failed: %v", err)
-		}
-
-		if exist {
-			return fmt.Errorf("timeout waiting for lock (%v)", maxLockWait)
+		if exists {
+			return fmt.Errorf("❌ Wait for lock release timeout (%v)", maxLockWait)
 		}
 	}
 
-	err = l.bucket.PutObject(lockFilePath, strings.NewReader(lockContent))
+	err = l.storage.PutObject(l.bucketName, lockFilePath, []byte(lockContent))
 	if err != nil {
-		return fmt.Errorf("create lock file failed: %v", err)
+		return fmt.Errorf("❌ Create lock file failed: %v", err)
 	}
 
-	fmt.Println("\nApt source repo locking!")
+	fmt.Println("\n🔒 APT source repository locked!")
 	return nil
 }
 
 func (l *Locker) Unlock() error {
-	exist, err := l.bucket.IsObjectExist(lockFilePath)
+	// Check if the lock file exists
+	exists, err := l.storage.HeadObject(l.bucketName, lockFilePath)
 	if err != nil {
-		return fmt.Errorf("check lock file failed: %v", err)
+		return fmt.Errorf("❌ Check lock file failed: %v", err)
 	}
 
-	if exist {
-		err = l.bucket.DeleteObject(lockFilePath)
-		if err != nil {
-			return fmt.Errorf("delete lock file failed: %v", err)
-		}
-		fmt.Println("\nApt source repo unlocked!")
+	if !exists {
+		// The lock file does not exist, no action needed
+		return nil
 	}
 
+	err = l.storage.DeleteObject(l.bucketName, lockFilePath)
+	if err != nil {
+		return fmt.Errorf("❌ Delete lock file failed: %v", err)
+	}
+
+	fmt.Println("\n🔓 APT source repository unlocked!")
 	return nil
 }
