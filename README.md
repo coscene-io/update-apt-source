@@ -11,7 +11,7 @@ A GitHub Action for managing Debian/Ubuntu APT repositories, parsing .deb packag
 - Implement GPG signing to ensure repository security
 - Support multiple architectures (amd64, arm64, etc.)
 - Support multiple Ubuntu distributions (bionic, focal, jammy, noble, etc.)
-- Integration with Aliyun OSS storage service
+- Integration with cloud storage service(aliyun oss and aws s3 was supported)
 
 ## Usage in GitHub Workflow
 
@@ -28,19 +28,19 @@ jobs:
   update-apt-repo:
   runs-on: ubuntu-latest
   steps:
-    - name: Update APT Source
-      uses: coscene-io/update-apt-source@main
+    - name: Update APT Source (OSS)
+      uses: coscene-io/update-apt-source@test
       with:
-        ubuntu_distro: noble
-        deb_paths: |
-            ./dist/myapp_1.0.0_amd64.deb
-            ./dist/myapp_1.0.0_arm64.deb
-        architectures: |
-            amd64
-            arm64
-        access_key_id: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
-        access_key_secret: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+        ubuntu_distro: foxy
+        deb_paths: /workspace/myapp_1.0.0_amd64.deb,/workspace/myapp_1.0.0_arm64.deb
+        architectures: amd64,arm64
+        storage_type: oss
+        endpoint: https://oss-***.aliyuncs.com
+        region: cn-***
+        bucket_name: *******
+        access_key_id: key
+        access_key_secret: secret
+        gpg_private_key: private_key
 ```
 
 ## Inputs
@@ -50,8 +50,12 @@ jobs:
 | `ubuntu_distro`     | Ubuntu distribution codename (e.g., `focal`, `jammy`, or `all`)                                                                          | Yes      |
 | `deb_paths`         | Paths to .deb packages, separated by newlines                                                                                            | Yes      |
 | `architectures`     | Architectures for each .deb package, separated by newlines, in the same order as deb-paths, with the same number of entries as deb-paths | Yes      |
-| `access_key_id`     | Aliyun OSS Access Key ID                                                                                                                 | Yes      |
-| `access_key_secret` | Aliyun OSS Access Key Secret                                                                                                             | Yes      |
+| `storage_type`      | Cloud storage type, aws or oss for now                                                                                                   | Yes      |
+| `endpoint`          | Cloud storage endpoint                                                                                                                   | Yes      |
+| `region`            | Cloud storage region                                                                                                                     | Yes      |
+| `bucket_name`       | Cloud storage bucket name                                                                                                                | Yes      |
+| `access_key_id`     | Cloud storage access key ID                                                                                                              | Yes      |
+| `access_key_secret` | Cloud storage access key secret                                                                                                          | Yes      |
 | `gpg_private_key`   | GPG private key for signing                                                                                                              | Yes      |
 
 ## How It Works
@@ -60,7 +64,7 @@ jobs:
 2. Generate APT repository structure based on specified Ubuntu distribution and architecture
 3. Create Packages file containing detailed information of all packages
 4. Generate and sign Release file to ensure repository integrity
-5. Upload packages and metadata files to Aliyun OSS storage
+5. Upload packages and metadata files to cloud storage(aliyun oss and aws s3 was supported)
 
 ## Security Note
 
