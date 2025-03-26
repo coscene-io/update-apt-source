@@ -9,7 +9,7 @@ import (
 
 const (
 	lockFilePath      = "apt-repo.lock"
-	maxLockWait       = 60 * time.Second
+	maxLockWait       = 60 * time.Minute
 	lockCheckInterval = 10 * time.Second
 )
 

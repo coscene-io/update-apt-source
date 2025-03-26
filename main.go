@@ -40,14 +40,7 @@ func main() {
 		panic("Invalid config!")
 	}
 
-	fmt.Printf("Parse config:\n")
-	fmt.Printf("  Ubuntu Distro: %s\n", cfg.UbuntuDistro)
-	fmt.Printf("  Number of packages to process: %d\n", len(cfg.DebPaths))
-	for i, path := range cfg.DebPaths {
-		fmt.Printf("    Package %d: %s (Architecture: %s)\n", i+1, path, cfg.Architectures[i])
-	}
-
-	fmt.Printf("\nInitialize storage client... ")
+	fmt.Printf("Initialize storage client... ")
 	storageProvider, err := storage.NewStorageProvider(
 		cfg.StorageType,
 		cfg.Endpoint,
@@ -591,7 +584,7 @@ func PrintDirectoryTree(root string, indent string) error {
 		info, err := entry.Info()
 		size := ""
 		if err == nil {
-			size = fmt.Sprintf("(%d 字节)", info.Size())
+			size = fmt.Sprintf("(%d bytes)", info.Size())
 		}
 
 		fmt.Printf("%s%s%s %s\n", indent, connector, entry.Name(), size)
