@@ -183,6 +183,7 @@ func parseConfig() config.Config {
 	bucketStr := os.Getenv("INPUT_BUCKET_NAME")
 	regionStr := os.Getenv("INPUT_REGION")
 	storageTypeStr := os.Getenv("INPUT_STORAGE_TYPE")
+	githubOutput := os.Getenv("GITHUB_OUTPUT")
 
 	fmt.Println("🌍Environment variables:")
 	fmt.Println("    INPUT_DEB_PATHS:", debPathsStr)
@@ -192,6 +193,7 @@ func parseConfig() config.Config {
 	fmt.Println("    INPUT_BUCKET_NAME:", bucketStr)
 	fmt.Println("    INPUT_REGION:", regionStr)
 	fmt.Println("    INPUT_STORAGE_TYPE:", storageTypeStr)
+	fmt.Println("    GITHUB_OUTPUT:", githubOutput)
 	fmt.Println("")
 
 	var debPaths, architectures []string
