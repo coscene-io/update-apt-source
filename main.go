@@ -36,8 +36,8 @@ var supportedUbuntuDistros = []string{
 
 func main() {
 	cfg := parseConfig()
-	if !cfg.IsValid() {
-		panic("Invalid config!")
+	if err := cfg.IsValid(); err != nil {
+		panic(fmt.Sprintf("Invalid config: %v", err))
 	}
 
 	fmt.Printf("Initialize storage client... ")
