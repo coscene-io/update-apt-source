@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/klauspost/compress v1.18.0
 	github.com/ulikunitz/xz v0.5.12
-	golang.org/x/crypto v0.36.0
+	golang.org/x/crypto v0.39.0
 )
 
 require (
