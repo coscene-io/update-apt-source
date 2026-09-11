@@ -20,10 +20,16 @@ type StorageProvider interface {
 	CreateSymlink(bucket, target, symlink string) error
 }
 
-func NewStorageProvider(providerType, endpoint, region, accessKey, secretKey string) (StorageProvider, error) {
+// proxyHost applies to the OSS client only: the SDK dials direct unless
+// oss.Proxy is set, ignoring HTTP(S)_PROXY. Empty means direct.
+func NewStorageProvider(providerType, endpoint, region, accessKey, secretKey, proxyHost string) (StorageProvider, error) {
 	switch strings.ToLower(providerType) {
 	case "oss", "aliyun":
-		client, err := oss.New(endpoint, accessKey, secretKey)
+		var opts []oss.ClientOption
+		if proxyHost != "" {
+			opts = append(opts, oss.Proxy(proxyHost))
+		}
+		client, err := oss.New(endpoint, accessKey, secretKey, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("initialize Aliyun OSS client failed: %v", err)
 		}

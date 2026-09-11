@@ -57,6 +57,7 @@ jobs:
 | `access_key_id`     | 云存储访问密钥ID                                                | 是    |
 | `access_key_secret` | 云存储访问密钥Secret                                            | 是    |
 | `gpg_private_key`   | 用于签名的GPG私钥                                               | 是    |
+| `proxy_host`        | 存储客户端使用的 HTTP 代理，如 `http://host:3128`（仅 oss；留空直连） | 否    |
 
 ## 工作原理
 

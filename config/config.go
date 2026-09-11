@@ -31,6 +31,7 @@ type Config struct {
 	BucketName      string
 	AccessKeyId     string
 	AccessKeySecret string
+	ProxyHost       string
 	GpgPrivateKey   []byte
 }
 

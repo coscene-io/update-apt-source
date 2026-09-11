@@ -57,6 +57,7 @@ jobs:
 | `access_key_id`     | Cloud storage access key ID                                                                                                              | Yes      |
 | `access_key_secret` | Cloud storage access key secret                                                                                                          | Yes      |
 | `gpg_private_key`   | GPG private key for signing                                                                                                              | Yes      |
+| `proxy_host`        | HTTP proxy for the storage client, e.g. `http://host:3128` (oss only; empty = direct)                                                    | No       |
 
 ## How It Works
 

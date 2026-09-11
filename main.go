@@ -47,6 +47,7 @@ func main() {
 		cfg.Region,
 		cfg.AccessKeyId,
 		cfg.AccessKeySecret,
+		cfg.ProxyHost,
 	)
 	if err != nil {
 		panic(fmt.Sprintf("Initialize storage client failed: %v", err))
@@ -183,6 +184,7 @@ func parseConfig() config.Config {
 	bucketStr := os.Getenv("INPUT_BUCKET_NAME")
 	regionStr := os.Getenv("INPUT_REGION")
 	storageTypeStr := os.Getenv("INPUT_STORAGE_TYPE")
+	proxyHostStr := os.Getenv("INPUT_PROXY_HOST")
 
 	fmt.Println("🌍Environment variables:")
 	fmt.Println("    INPUT_DEB_PATHS:", debPathsStr)
@@ -192,6 +194,7 @@ func parseConfig() config.Config {
 	fmt.Println("    INPUT_BUCKET_NAME:", bucketStr)
 	fmt.Println("    INPUT_REGION:", regionStr)
 	fmt.Println("    INPUT_STORAGE_TYPE:", storageTypeStr)
+	fmt.Println("    INPUT_PROXY_HOST:", proxyHostStr)
 	fmt.Println("")
 
 	var debPaths, architectures []string
@@ -219,6 +222,7 @@ func parseConfig() config.Config {
 		BucketName:      bucketStr,
 		AccessKeyId:     os.Getenv("INPUT_ACCESS_KEY_ID"),
 		AccessKeySecret: os.Getenv("INPUT_ACCESS_KEY_SECRET"),
+		ProxyHost:       proxyHostStr,
 		GpgPrivateKey:   privateKey,
 	}
 }
